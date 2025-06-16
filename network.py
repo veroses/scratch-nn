@@ -78,11 +78,12 @@ class Network:
             grad_b[layer] = delta[layer]
         return grad_w, grad_b
     
-    def evaluate(self): #evaluate accuracy based on validation set
-        return
+    def evaluate(self, test_data): #evaluate accuracy based on validation set, specifically for mnist
+        test_results = [(np.argmax(self.feedforward(x)), np.argmax(y)) for (x, y) in test_data]
+        return sum(int(predicted == actual) for (predicted, actual) in test_results)
     
-    def cost_derivative(self, x, y):
-        return
+    def cost_derivative(self, output_a, y):
+        return output_a - y
 
 def sigmoid(z): #sigmoid function
     return 1 / (1 + np.exp(-z))
