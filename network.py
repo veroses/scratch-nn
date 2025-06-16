@@ -14,7 +14,7 @@ class Network:
     
     def feedforward(self, a): #calculate out of network given input a
         for weight, bias in zip(self.weights, self.biases):
-            a = sigmoid(np.dot(weight, a) + bias)
+            a = sigmoid(np.matmul(weight, a) + bias)
         return a
     
     def SGD(self, training_data, epochs, mini_batch_size, test_data = None): #stochastic gradient descent given mini batch size and number of epochs
@@ -36,16 +36,52 @@ class Network:
             else:
                 print (f"Epoch {epoch} complete")
                     
-    def update_mini_batch(self, mini_batch, learning_rate):
-        return
+    def update(self, mini_batch, learning_rate):
+        grad_w = [np.zeros_like(w) for w in self.weights]
+        grad_b = [np.zeros_like(b) for b in self.biases]
+
+        for x, y in mini_batch:
+            delta_grad_w, delta_grad_b = self.backprop(x, y)
+            for i in range(self.num_layers - 1):
+                grad_w[i] += delta_grad_w[i]
+                grad_b[i] += delta_grad_b[i]
+
+        for i in range(self.num_layers - 1):
+            self.weights[i] -= learning_rate * grad_w[i]
+            self.biases[i] -= learning_rate * grad_b[i]
+        
 
     def backprop(self, x, y): #backpropagation algorithm  
-        return
+        grad_w = [np.zeros_like(w) for w in self.weights]
+        grad_b = [np.zeros_like(b) for b in self.biases]
+        activations = [x]
+        z_values = []
+
+        #run forward feed
+        for weight, bias in zip(self.weights, self.biases):
+            z = np.matmul(weight, x) + bias
+            a = sigmoid(z)
+
+            z_values.append(z)
+            activations.append(a)
+        
+        #start backwards run
+
+        delta = [np.zeros_like(b) for b in self.biases]
+
+        for layer in range(self.num_layers - 2, -1, -1):
+            if layer == self.num_layers - 2:
+                delta[-1] = np.multiply(self.cost_derivative(activations[-1], y), sigmoid_derivative(z_values[-1]))
+            else:
+                delta[layer] = np.multiply(np.matmul(self.weights[layer + 1], delta[layer + 1]), sigmoid_derivative(z_values[layer]))
+            grad_w[layer] = np.matmul(delta[layer], np.transpose(activations[layer - 1]))
+            grad_b[layer] = delta[layer]
+        return grad_w, grad_b
     
     def evaluate(self): #evaluate accuracy based on validation set
         return
     
-    def cost_derivative(self):
+    def cost_derivative(self, x, y):
         return
 
 def sigmoid(z): #sigmoid function
