@@ -7,17 +7,21 @@ class Network:
     def __init__(self, layer_sizes):
         self.num_layers = len(layer_sizes)
         self.biases = [np.random.rand(y, 1) for y in layer_sizes[1:]]
-        self.weights = [np.random.rand(y, x) for x, y in zip(layer_sizes[:-1], layer_sizes[1:])]
+        self.weights = [
+        np.random.randn(y, x) * np.sqrt(1 / x)
+        for x, y in zip(layer_sizes[:-1], layer_sizes[1:])
+    ]
+        #[np.random.rand(y, x) for x, y in zip(layer_sizes[:-1], layer_sizes[1:])]
 
     
 
     
     def feedforward(self, a): #calculate out of network given input a
         for weight, bias in zip(self.weights, self.biases):
-            a = sigmoid(np.matmul(weight, a) + bias)
+            a = sigmoid(np.dot(weight, a) + bias)
         return a
     
-    def SGD(self, training_data, epochs, mini_batch_size, test_data = None): #stochastic gradient descent given mini batch size and number of epochs
+    def SGD(self, training_data, epochs, mini_batch_size, learning_rate, test_data = None): #stochastic gradient descent given mini batch size and number of epochs
         if test_data:
             n_testdata = len(test_data)
 
@@ -28,7 +32,7 @@ class Network:
                 training_data[k:k + mini_batch_size] for k in range(0, training_size, mini_batch_size)
             ]
             for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch)
+                self.update(mini_batch, learning_rate)
 
             if test_data:
                 print (f"Epoch {epoch}: {self.evaluate(test_data)} / {n_testdata}")
@@ -42,44 +46,60 @@ class Network:
 
         for x, y in mini_batch:
             delta_grad_w, delta_grad_b = self.backprop(x, y)
-            for i in range(self.num_layers - 1):
+            for i in range(len(self.weights)):
+                #print(f"Layer {i}: weight shape = {self.weights[i].shape}, delta_grad_w shape = {delta_grad_w[i].shape}")
                 grad_w[i] += delta_grad_w[i]
                 grad_b[i] += delta_grad_b[i]
 
-        for i in range(self.num_layers - 1):
+        #print("Norm of grad_w[0]:", np.linalg.norm(grad_w[0]))
+
+        for i in range(len(self.weights)):
+            #before = np.copy(self.weights[0])
+
             self.weights[i] -= learning_rate * grad_w[i]
             self.biases[i] -= learning_rate * grad_b[i]
+            
+            #print("Weight change:", np.linalg.norm(self.weights[0] - before))
+
         
 
-    def backprop(self, x, y): #backpropagation algorithm  
+    def backprop(self, x, y): #backpropagation algorithm 
+        x = x.reshape(-1, 1)
+        y = y.reshape(-1, 1)
         grad_w = [np.zeros_like(w) for w in self.weights]
         grad_b = [np.zeros_like(b) for b in self.biases]
-        activations = [x]
+        a = x
+        activations = [a]
         z_values = []
 
         #run forward feed
         for weight, bias in zip(self.weights, self.biases):
-            z = np.matmul(weight, x) + bias
+            z = np.dot(weight, a) + bias
             a = sigmoid(z)
 
             z_values.append(z)
             activations.append(a)
         
+
+      #  for i, z in enumerate(z_values):
+        #    print(f"Layer {i}: max z = {np.max(z)}, min z = {np.min(z)}")
         #start backwards run
 
         delta = [np.zeros_like(b) for b in self.biases]
 
         for layer in range(self.num_layers - 2, -1, -1):
+           #print(f"Layer {layer}: delta = {delta[layer].shape}, activation = {activations[layer].shape}, grad_w = {delta[layer].shape} @ {activations[layer].T.shape}")
+
             if layer == self.num_layers - 2:
                 delta[-1] = np.multiply(self.cost_derivative(activations[-1], y), sigmoid_derivative(z_values[-1]))
             else:
-                delta[layer] = np.multiply(np.matmul(self.weights[layer + 1], delta[layer + 1]), sigmoid_derivative(z_values[layer]))
-            grad_w[layer] = np.matmul(delta[layer], np.transpose(activations[layer - 1]))
+                delta[layer] = np.multiply(np.matmul(self.weights[layer + 1].T, delta[layer + 1]), sigmoid_derivative(z_values[layer]))
+            grad_w[layer] = np.matmul(delta[layer], np.transpose(activations[layer]))
             grad_b[layer] = delta[layer]
         return grad_w, grad_b
     
     def evaluate(self, test_data): #evaluate accuracy based on validation set, specifically for mnist
-        test_results = [(np.argmax(self.feedforward(x)), np.argmax(y)) for (x, y) in test_data]
+        test_results = [(np.argmax(self.feedforward(x)), y) for (x, y) in test_data]
         return sum(int(predicted == actual) for (predicted, actual) in test_results)
     
     def cost_derivative(self, output_a, y):
@@ -88,5 +108,5 @@ class Network:
 def sigmoid(z): #sigmoid function
     return 1 / (1 + np.exp(-z))
 
-def sigmoid_derivative(self, z):
+def sigmoid_derivative(z):
     return sigmoid(z) * (1 - sigmoid(z))
