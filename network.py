@@ -17,7 +17,7 @@ class Network:
         for weight, bias in zip(self.weights[:-1], self.biases[:-1]):
             a = sigmoid(np.dot(weight, a) + bias)
 
-        z_L = np.dot(weight, a) + bias
+        z_L = np.dot(self.weights[-1], a) + self.biases[-1]
         a = self.softmax(z_L)
         return a
     
@@ -39,7 +39,7 @@ class Network:
 
             if(self.vectorized):
                 for mini_batch in mini_batches:
-                    self.update_vectorized(mini_batch, learning_rate)
+                    self.update_vectorized(mini_batch, mini_batch_size, learning_rate)
             
             else:
                 for mini_batch in mini_batches:
@@ -175,7 +175,7 @@ def sigmoid_derivative(z):
 
 
 def cross_entropy(output_a, y):
-    return y * np.log(a) + (1 - y) * np.log(1 - output_a)
+    return y * np.log(output_a) + (1 - y) * np.log(1 - output_a)
 
 def cross_entropy_delta(a, y):
     return a - y
