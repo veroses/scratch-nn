@@ -55,7 +55,6 @@ class Network:
         self.biases = [b - learning_rate * delta_b for b, delta_b in zip(self.biases, grad_b)]
         return
 
-
     def update_scalar(self, mini_batch, learning_rate):
         grad_w = [np.zeros_like(w) for w in self.weights]
         grad_b = [np.zeros_like(b) for b in self.biases]
@@ -76,8 +75,8 @@ class Network:
             self.biases[i] -= learning_rate * grad_b[i]
             
             #print("Weight change:", np.linalg.norm(self.weights[0] - before))
+        return
 
-        
     def backprop_scalar(self, x, y): #backpropagation algorithm 
         x = x.reshape(-1, 1)
         y = y.reshape(-1, 1)
@@ -112,7 +111,6 @@ class Network:
             grad_b[layer] = delta[layer]
         return grad_w, grad_b
     
-
     def backprop_vectorized(self, X, Y): #backpropagation algorithm with X as a matrix containing all xs
         grad_w = [np.zeros_like(w) for w in self.weights]
         grad_b = [np.zeros_like(b) for b in self.biases]
@@ -128,7 +126,6 @@ class Network:
             z_values.append(z)
             activations.append(activation)
         
-
       #  for i, z in enumerate(z_values):
         #    print(f"Layer {i}: max z = {np.max(z)}, min z = {np.min(z)}")
         #start backwards run
